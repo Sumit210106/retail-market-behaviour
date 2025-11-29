@@ -1,0 +1,11 @@
+| What We Do (Tech)                | What Users See (Feature Name)     | Tagline                               |
+| -------------------------------- | --------------------------------- | ------------------------------------- |
+| Apriori (Market Basket Analysis) | **Frequently Bought Together**    | Boost cross-selling with smart combos |
+| K-Means (Segmentation)           | **Customer Groups & Insights**    | Know your shoppers to target better   |
+| Decision Tree Prediction         | **Customer Spend Prediction**     | Identify high-value customers         |
+| DBSCAN Outlier Detection         | **Suspicious Transactions Alert** | Detect fraud & billing anomalies      |
+| KNN Similar Products             | **Smart Product Recommendations** | Suggest products customers will love  |
+| PCA Visualization                | **Customer Behavior Map**         | Visual view of customer clusters      |
+| Time-based analysis              | **Peak Sales Insights**           | Best days/hours to run promotions     |
+| Upload Custom Data               | **Analyze My Store**              | Upload your own sales data            |
+

@@ -1,0 +1,120 @@
+from fastapi import FastAPI
+from utils.data_loader import load_default_data
+from ml.timeseries import peak_sales_insights
+from ml.knn import build_knn, recommend
+from ml.apriori import run_apriori
+from ml.kmeans import run_kmeans
+from ml.decision_tree import run_decision_tree
+
+
+app = FastAPI()
+
+# ---------------------------------------------------------
+# HOME
+# ---------------------------------------------------------
+@app.get("/")
+def home():
+    return {"status": "API is running!"}
+
+
+# ---------------------------------------------------------
+# DEFAULT DATA PREVIEW
+# ---------------------------------------------------------
+@app.get("/default-data")
+def get_default_data():
+    df = load_default_data()
+    return {
+        "rows": df.shape[0],
+        "columns": df.columns.tolist(),
+        "preview": df.head(5).to_dict(orient="records"),
+    }
+
+
+# ---------------------------------------------------------
+# PEAK SALES INSIGHTS
+# ---------------------------------------------------------
+@app.get("/peak-sales")
+def get_peak_sales():
+    df = load_default_data()
+    return peak_sales_insights(df)
+
+
+# ---------------------------------------------------------
+# KNN SIMILAR PRODUCTS (Startup Cache)
+# ---------------------------------------------------------
+products = []
+sim_matrix = None
+
+
+@app.on_event("startup")
+def prepare_knn():
+    global products, sim_matrix
+    df = load_default_data()
+    products, sim_matrix = build_knn(df)
+    print("KNN model loaded with", len(products), "products")
+
+
+# ---------------------------------------------------------
+# KNN ENDPOINTS
+# ---------------------------------------------------------
+@app.get("/similar-products")
+def similar(product: str):
+    return recommend(product, products, sim_matrix)
+
+# Here limit to first 50 .
+@app.get("/similar-products/all")
+def all_similar():
+    result = {}
+    limit = 50  # avoid API timeout
+
+    for product in products[:limit]:
+        result[product] = recommend(product, products, sim_matrix, top_k=5)
+
+    return result
+
+
+# ---------------------------------------------------------
+# APRIORI – Frequently Bought Together
+# ---------------------------------------------------------
+@app.get("/frequently-bought-together")
+def get_fbt(
+    min_support: float = 0.001,
+    min_confidence: float = 0.01,
+    top_k: int = 20
+):
+    df = load_default_data()
+    result = run_apriori(df, min_support, min_confidence)
+
+    # Case 1: Returns message → No rules found
+    if isinstance(result, dict) and "message" in result:
+        return result  # return message as-is
+
+    # Case 2: Actual list of rules → sort and return top_k
+    rules = sorted(result, key=lambda x: x["lift"], reverse=True)
+    return rules[:top_k]
+
+
+
+# ---------------------------
+# KMEANS ENDPOINT
+# ---------------------------
+@app.get("/customer-segmentation")
+def customer_segmentation(k: int = 3):
+    """
+    Run K-Means clustering for customer segmentation.
+    Returns cluster summaries.
+    """
+    df = load_default_data()
+    result = run_kmeans(df, k)
+    return result
+
+# ---------------------------
+# DECISION TREE ENDPOINT
+# ---------------------------
+
+@app.get("/customer-spend-prediction")
+def spend_prediction():
+    df = load_default_data()
+    result = run_decision_tree(df)
+    return result
+

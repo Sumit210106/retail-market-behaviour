@@ -1,6 +1,8 @@
 from mlxtend.frequent_patterns import apriori, association_rules
-from database import df  # import shared dataframe
+from database import df  
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 def run_analysis(min_support=0.02, min_confidence=0.2):
 
@@ -20,24 +22,34 @@ def run_analysis(min_support=0.02, min_confidence=0.2):
 
     rules = rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']]
 
-    # frozenset → list (JSON friendly)
+    
     rules['antecedents'] = rules['antecedents'].apply(list)
     rules['consequents'] = rules['consequents'].apply(list)
 
     return rules.to_dict(orient="records")
 
-
 def sales_by_time():
-    filtered = df[~df['InvoiceNo'].astype(str).str.startswith('C')].copy()
-    filtered['InvoiceDate'] = pd.to_datetime(filtered['InvoiceDate'])
-    filtered['Hour'] = filtered['InvoiceDate'].dt.hour
-    filtered['DayOfWeek'] = filtered['InvoiceDate'].dt.day_name()
 
-    hourly_sales = filtered.groupby('Hour')['Quantity'].sum().to_dict()
-    day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    daily_sales = filtered.groupby('DayOfWeek')['Quantity'].sum().reindex(day_order).fillna(0).to_dict()
+    # preprocess
+    cleaned_df = df.copy()
+    cleaned_df = cleaned_df.dropna(subset=['CustomerID'])
+    cleaned_df = cleaned_df[cleaned_df['Quantity'] > 0]
+    cleaned_df = cleaned_df[cleaned_df['UnitPrice'] > 0]
+    print(cleaned_df.head())
 
-    return {"hourly_sales": hourly_sales, "daily_sales": daily_sales}
+    # to date time
+    cleaned_df['InvoiceDate'] = pd.to_datetime(df['InvoiceDate'])
+
+
+    cleaned_df['Hour'] = cleaned_df['InvoiceDate'].dt.hour
+    cleaned_df['DayOfWeek'] = cleaned_df['InvoiceDate'].dt.day_name()
+    cleaned_df['Date'] = cleaned_df['InvoiceDate'].dt.date
+    
+    return 
+
+
+
+
 
 
 def segment_customers_by_basket():
