@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from utils.data_loader import load_default_data
+from utils.data_loader import load_5lakh_data
 from ml.timeseries import peak_sales_insights
 from ml.knn import build_knn, recommend
 from ml.apriori import run_apriori
@@ -82,16 +83,25 @@ def get_fbt(
     min_confidence: float = 0.01,
     top_k: int = 20
 ):
-    df = load_default_data()
+    df =load_5lakh_data()
+
     result = run_apriori(df, min_support, min_confidence)
-
-    # Case 1: Returns message → No rules found
-    if isinstance(result, dict) and "message" in result:
-        return result  # return message as-is
-
-    # Case 2: Actual list of rules → sort and return top_k
-    rules = sorted(result, key=lambda x: x["lift"], reverse=True)
-    return rules[:top_k]
+    
+    # run_apriori returns {"message": "...", "rules": [...]}
+    rules = result.get("rules", [])
+    
+    # Sort by combination_size (descending) first, then by lift (descending)
+    # This prioritizes showing 3-4 item combinations before 2-item ones
+    sorted_rules = sorted(
+        rules, 
+        key=lambda x: (x.get("combination_size", 0), x["lift"]), 
+        reverse=True
+    )
+    
+    return {
+        "message": result.get("message", "Success"),
+        "rules": sorted_rules[:top_k]
+    }
 
 
 

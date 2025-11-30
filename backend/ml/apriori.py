@@ -4,24 +4,21 @@ from mlxtend.frequent_patterns import apriori, association_rules
 
 def run_apriori(
     df,
-    min_support=0.005,        # smart default
-    min_confidence=0.1,       # smart default
-    max_rules=20
+    min_support=0.0005,      # Very low to find rare 4-item patterns
+    min_confidence=0.1,
+    top_n_products=120,      # Balanced for speed and pattern quality
+    max_len=4,               # Allow up to 4-item combinations
+    max_rules=50             # Increased to get more results
 ):
-    """
-    Runs Apriori on the retail dataset and returns strong association rules.
 
-    OUTPUT FORMAT (list of dicts):
-    [
-        {
-            "buy_together": ["A", "B"],
-            "recommend": ["C"],
-            "support": 0.0124,
-            "confidence": 0.62,
-            "lift": 2.14
-        },
-        ...
-    ]
+    """
+    Highly optimized Apriori for large datasets.
+    Supports:
+    - 2-itemsets
+    - 3-itemsets
+    - 4-itemsets (adjustable with max_len)
+
+    Returns strong association rules in JSON format.
     """
 
     # ---------------------------------------------------
@@ -29,35 +26,49 @@ def run_apriori(
     # ---------------------------------------------------
     df = df[['InvoiceNo', 'Description', 'Quantity']].dropna()
 
-    # Group by invoice, convert to basket matrix
+    # Remove cancelled invoices + negative quantity
+    df = df[df["Quantity"] > 0]
+    df = df[~df["InvoiceNo"].astype(str).str.startswith("C")]
+
+    # Select top N most frequent products (boosts speed x10)
+    product_counts = df["Description"].value_counts()
+    top_products = product_counts.head(top_n_products).index
+    df = df[df["Description"].isin(top_products)]
+
+    print(
+        f"Apriori: {df['InvoiceNo'].nunique()} transactions, "
+        f"{len(top_products)} products, max_len={max_len}"
+    )
+
+    # ---------------------------------------------------
+    # STEP 2: Build basket matrix (Boolean One-Hot)
+    # ---------------------------------------------------
     basket = (
-        df.groupby(['InvoiceNo', 'Description'])['Quantity']
+        df.groupby(["InvoiceNo", "Description"])["Quantity"]
         .sum()
         .unstack()
         .fillna(0)
     )
 
-    # Convert quantities to 0/1 (presence)
-    basket = basket.applymap(lambda x: 1 if x > 0 else 0)
+    basket = (basket > 0).astype(bool)
 
     # ---------------------------------------------------
-    # STEP 2: Frequent itemsets
+    # STEP 3: Frequent Itemsets
     # ---------------------------------------------------
     frequent_items = apriori(
         basket,
         min_support=min_support,
         use_colnames=True,
-        max_len=3
+        max_len=max_len
     )
 
     if frequent_items.empty:
-        return {
-            "message": "No frequent patterns found.",
-            "rules": []
-        }
+        return {"message": "No frequent itemsets found.", "rules": []}
+
+    print("Frequent itemsets found:", frequent_items.shape[0])
 
     # ---------------------------------------------------
-    # STEP 3: Build rules
+    # STEP 4: Build strong rules
     # ---------------------------------------------------
     rules = association_rules(
         frequent_items,
@@ -66,38 +77,34 @@ def run_apriori(
     )
 
     if rules.empty:
-        return {
-            "message": "No association rules found.",
-            "rules": []
-        }
+        return {"message": "No rules found.", "rules": []}
 
-    # Keep useful columns only
-    rules = rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']]
+    # Keep useful columns
+    rules = rules[["antecedents", "consequents", "support", "confidence", "lift"]]
 
-    # Convert frozensets to lists
-    rules['antecedents'] = rules['antecedents'].apply(lambda x: list(x))
-    rules['consequents'] = rules['consequents'].apply(lambda x: list(x))
+    # Convert frozensets → lists
+    rules["antecedents"] = rules["antecedents"].apply(list)
+    rules["consequents"] = rules["consequents"].apply(list)
 
-    # Sort strongest → weakest
-    rules = rules.sort_values(by='lift', ascending=False)
+    # Sort by strength
+    rules = rules.sort_values(by="lift", ascending=False)
 
     # ---------------------------------------------------
-    # STEP 4: Convert to JSON-friendly format
+    # STEP 5: Format JSON output
     # ---------------------------------------------------
-    formatted_rules = []
+    formatted = []
     for _, row in rules.head(max_rules).iterrows():
-        formatted_rules.append({
-            "buy_together": row['antecedents'],
-            "recommend": row['consequents'],
-            "support": round(float(row['support']), 4),
-            "confidence": round(float(row['confidence']), 4),
-            "lift": round(float(row['lift']), 3),
+
+        formatted.append({
+            "buy_together": row["antecedents"],
+            "recommend": row["consequents"],
+            "support": round(float(row["support"]), 4),
+            "confidence": round(float(row["confidence"]), 4),
+            "lift": round(float(row["lift"]), 3),
+            "combination_size": len(row["antecedents"]) + len(row["consequents"])
         })
 
-    # ---------------------------------------------------
-    # Final output
-    # ---------------------------------------------------
     return {
-        "message": f"{len(formatted_rules)} rules found.",
-        "rules": formatted_rules
+        "message": f"{len(formatted)} rules found.",
+        "rules": formatted
     }
