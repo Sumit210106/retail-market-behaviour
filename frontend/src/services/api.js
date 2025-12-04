@@ -37,7 +37,7 @@ export const API = {
   customerSpendPrediction: () => get("/customer-spend-prediction"),
 
   // PCA visualizations
-  pcaVisualization: () => get("/pca-visualization"),
+  // pcaVisualization: () => get("/pca-visualization"),
 
   // PCA duplicate route
   customerBehavior: () => get("/customer-behavior"),
