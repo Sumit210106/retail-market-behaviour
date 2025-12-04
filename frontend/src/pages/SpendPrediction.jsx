@@ -72,10 +72,7 @@ export default function SpendPredictionDashboard({ sidebarWidth = 64 }) {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             Customer Spend Predictions
           </h1>
-          <p className="text-gray-600 mb-1">
-            See which customers are likely to spend more so you can focus your efforts where it matters most.
-          </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-md text-gray-500">
             Using Decision Tree analysis on past purchase behavior
           </p>
         </div>

@@ -19,10 +19,10 @@ function cn(...inputs) {
 }
 
 const menuItems = [
-  { icon: ShoppingBag, label: "Frequently Bought", path: "/frequently-bought" },
+  // { icon: ShoppingBag, label: "Frequently Bought", path: "/frequently-bought" },
   { icon: Users, label: "Customer Segments", path: "/segments" },
   { icon: TrendingUp, label: "Spend Prediction", path: "/spend-prediction" },
-  { icon: AlertTriangle, label: "Outlier Detection", path: "/outliers" },
+  // { icon: AlertTriangle, label: "Outlier Detection", path: "/outliers" },
   { icon: ThumbsUp, label: "Recommendations", path: "/recommendations" },
   { icon: Map, label: "Behavior Map", path: "/behavior-map" },
   { icon: BarChart2, label: "Peak Insights", path: "/peak-insights" },
