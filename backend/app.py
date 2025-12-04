@@ -3,7 +3,7 @@ from utils.data_loader import load_default_data
 from utils.data_loader import load_5lakh_data
 from ml.timeseries import peak_sales_insights
 from ml.knn import build_knn, recommend
-from ml.apriori import run_apriori
+# from ml.apriori import run_apriori
 from ml.kmeans import run_kmeans
 from ml.decision_tree import run_decision_tree
 from ml.pca import run_pca
