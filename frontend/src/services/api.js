@@ -1,43 +1,99 @@
-const API_URL = "http://127.0.0.1:8000";
+// src/services/api.js
 
-async function fetchAPI(endpoint, options = {}) {
-    try {
-        const response = await fetch(`${API_URL}${endpoint}`, options);
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error(`Error fetching ${endpoint}:`, error);
-        throw error;
-    }
+const BASE_URL = "https://retail-market-behaviour.onrender.com"; 
+// ↑ Replace with your actual backend URL
+
+// Generic GET helper
+async function get(endpoint) {
+  try {
+    const res = await fetch(`${BASE_URL}${endpoint}`);
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error("Fetch Error:", err);
+    throw err;
+  }
 }
 
-// Home
-export const getHome = () => fetchAPI("/");
+export const API = {
+  // Home / health check
+  home: () => get("/"),
 
-// Default Data
-export const getDefaultData = () => fetchAPI("/default-data");
+  // Default dataset info
+  defaultData: () => get("/default-data"),
 
-// Peak Sales Insights
-export const getPeakSales = () => fetchAPI("/peak-sales");
+  // Peak sales insights
+  peakSales: () => get("/peak-sales"),
 
-// KNN Similar Products
-export const getSimilarProducts = (product) => fetchAPI(`/similar-products?product=${encodeURIComponent(product)}`);
-export const getAllSimilarProducts = () => fetchAPI("/similar-products/all");
+  // KNN - Similar products
+  similarProducts: (product) => get(`/similar-products?product=${product}`),
 
-// Apriori - Frequently Bought Together
-export const getFrequentlyBoughtTogether = (minSupport = 0.001, minConfidence = 0.01, topK = 20) =>
-    fetchAPI(`/frequently-bought-together?min_support=${minSupport}&min_confidence=${minConfidence}&top_k=${topK}`);
+  allSimilarProducts: () => get("/similar-products/all"),
 
-// K-Means Clustering
-export const getCustomerSegmentation = (k = 3) => fetchAPI(`/customer-segmentation?k=${k}`);
+  // K-Means customer segmentation
+  customerSegmentation: (k = 3) => get(`/customer-segmentation?k=${k}`),
 
-// Decision Tree - Spend Prediction
-export const getSpendPrediction = () => fetchAPI("/customer-spend-prediction");
+  // Decision Tree
+  customerSpendPrediction: () => get("/customer-spend-prediction"),
+
+  // PCA visualizations
+  pcaVisualization: () => get("/pca-visualization"),
+
+  // PCA duplicate route
+  customerBehavior: () => get("/customer-behavior"),
+};
+
+
+/*
+------------------------------------------------------------
+HOW TO USE INSIDE FRONTEND (React Example)
+------------------------------------------------------------
+
+import { API } from "../services/api";
+import { useEffect, useState } from "react";
+
+function DemoComponent() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    async function loadData() {
+      const res = await API.defaultData();   // <-- Call API here
+      setData(res);
+    }
+    loadData();
+  }, []);
+
+  return (
+    <div>
+      <h1>Default Data Preview</h1>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
+}
+
+export default DemoComponent;
+
+------------------------------------------------------------
+OTHER API USAGE EXAMPLES
+------------------------------------------------------------
+
+// Peak Sales
+const peak = await API.peakSales();
+
+// Similar products
+const rec = await API.similarProducts("Laptop");
+
+// All similar products (first 50 only)
+const all = await API.allSimilarProducts();
+
+// K-Means Segmentation
+const clusters = await API.customerSegmentation(3);
+
+// Decision Tree results
+const tree = await API.customerSpendPrediction();
 
 // PCA Visualization
-export const getPcaVisualization = () => fetchAPI("/pca-visualization");
+const pca = await API.pcaVisualization();
 
-// Customer Behavior (PCA alias)
-export const getCustomerBehavior = () => fetchAPI("/customer-behavior");
+------------------------------------------------------------
+*/
