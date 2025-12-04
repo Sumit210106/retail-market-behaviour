@@ -78,31 +78,31 @@ def all_similar():
 # ---------------------------------------------------------
 # APRIORI – Frequently Bought Together
 # ---------------------------------------------------------
-@app.get("/frequently-bought-together")
-def get_fbt(
-    min_support: float = 0.001,
-    min_confidence: float = 0.01,
-    top_k: int = 20
-):
-    df =load_5lakh_data()
+# @app.get("/frequently-bought-together")
+# def get_fbt(
+#     min_support: float = 0.001,
+#     min_confidence: float = 0.01,
+#     top_k: int = 20
+# ):
+#     df =load_5lakh_data()
 
-    result = run_apriori(df, min_support, min_confidence)
+#     result = run_apriori(df, min_support, min_confidence)
     
-    # run_apriori returns {"message": "...", "rules": [...]}
-    rules = result.get("rules", [])
+#     # run_apriori returns {"message": "...", "rules": [...]}
+#     rules = result.get("rules", [])
     
-    # Sort by combination_size (descending) first, then by lift (descending)
-    # This prioritizes showing 3-4 item combinations before 2-item ones
-    sorted_rules = sorted(
-        rules, 
-        key=lambda x: (x.get("combination_size", 0), x["lift"]), 
-        reverse=True
-    )
+#     # Sort by combination_size (descending) first, then by lift (descending)
+#     # This prioritizes showing 3-4 item combinations before 2-item ones
+#     sorted_rules = sorted(
+#         rules, 
+#         key=lambda x: (x.get("combination_size", 0), x["lift"]), 
+#         reverse=True
+#     )
     
-    return {
-        "message": result.get("message", "Success"),
-        "rules": sorted_rules[:top_k]
-    }
+#     return {
+#         "message": result.get("message", "Success"),
+#         "rules": sorted_rules[:top_k]
+#     }
 
 
 
