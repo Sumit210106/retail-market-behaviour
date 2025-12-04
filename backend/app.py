@@ -8,8 +8,19 @@ from ml.kmeans import run_kmeans
 from ml.decision_tree import run_decision_tree
 from ml.pca import run_pca
 
+# cors
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],        
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # ---------------------------------------------------------
 # HOME
