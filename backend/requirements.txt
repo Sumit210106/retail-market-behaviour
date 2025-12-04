@@ -3,5 +3,7 @@ uvicorn
 pandas
 python-multipart
 mlxtend
-pandas
 openpyxl
+scikit-learn
+numpy
+httpx

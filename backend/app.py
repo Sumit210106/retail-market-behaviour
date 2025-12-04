@@ -6,6 +6,7 @@ from ml.knn import build_knn, recommend
 from ml.apriori import run_apriori
 from ml.kmeans import run_kmeans
 from ml.decision_tree import run_decision_tree
+from ml.pca import run_pca
 
 
 app = FastAPI()
@@ -128,3 +129,27 @@ def spend_prediction():
     result = run_decision_tree(df)
     return result
 
+
+# ---------------------------
+# PCA ENDPOINT
+# ---------------------------
+@app.get("/pca-visualization")
+def pca_visualization():
+    """
+    Run PCA for customer visualization.
+    Returns 2D coordinates for each customer.
+    """
+    df = load_default_data()
+    result = run_pca(df)
+    return result
+
+
+# ---------------------------
+# PCA
+# ---------------------------
+
+@app.get("/customer-behavior")
+def customer_behavior():
+    df = load_default_data()
+    result = run_pca(df)
+    return result
