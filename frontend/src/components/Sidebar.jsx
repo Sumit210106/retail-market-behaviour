@@ -26,7 +26,7 @@ const menuItems = [
   { icon: ThumbsUp, label: "Recommendations", path: "/recommendations" },
   { icon: Map, label: "Behavior Map", path: "/behavior-map" },
   { icon: BarChart2, label: "Peak Insights", path: "/peak-insights" },
-  { icon: UploadCloud, label: "Upload Data", path: "/upload" },
+  { icon: UploadCloud, label: "Data Set", path: "/upload" },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
