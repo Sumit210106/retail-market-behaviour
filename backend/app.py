@@ -45,14 +45,16 @@ def get_peak_sales():
 # KNN SIMILAR PRODUCTS (Startup Cache)
 # ---------------------------------------------------------
 products = []
-sim_matrix = None
+products = []
+knn_model = None
+sparse_matrix = None
 
 
 @app.on_event("startup")
 def prepare_knn():
-    global products, sim_matrix
+    global products, knn_model, sparse_matrix
     df = load_default_data()
-    products, sim_matrix = build_knn(df)
+    products, knn_model, sparse_matrix = build_knn(df)
     print("KNN model loaded with", len(products), "products")
 
 
@@ -61,7 +63,7 @@ def prepare_knn():
 # ---------------------------------------------------------
 @app.get("/similar-products")
 def similar(product: str):
-    return recommend(product, products, sim_matrix)
+    return recommend(product, products, knn_model, sparse_matrix)
 
 # Here limit to first 50 .
 @app.get("/similar-products/all")
@@ -70,7 +72,7 @@ def all_similar():
     limit = 50  # avoid API timeout
 
     for product in products[:limit]:
-        result[product] = recommend(product, products, sim_matrix, top_k=5)
+        result[product] = recommend(product, products, knn_model, sparse_matrix, top_k=5)
 
     return result
 
