@@ -14,7 +14,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<FrequentlyBought />} />
+        <Route path="/" element={<CustomerSegments />} />
         <Route path="/frequently-bought" element={<FrequentlyBought />} />
         <Route path="/segments" element={<CustomerSegments />} />
         <Route path="/spend-prediction" element={<SpendPrediction />} />
