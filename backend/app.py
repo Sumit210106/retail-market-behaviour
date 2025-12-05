@@ -7,7 +7,9 @@ from ml.knn import build_knn, recommend
 from ml.kmeans import run_kmeans
 from ml.decision_tree import run_decision_tree
 from ml.pca import run_pca
-
+import json
+import gzip
+import os
 # cors
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -30,6 +32,26 @@ def home():
     return {"status": "API is running!"}
 
 
+# --------------------------------------------------------
+# Load Apriori output once when the server starts
+# --------------------------------------------------------
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+APR_PATH = os.path.join(BASE_DIR, "cached", "apriori_output.json.gz")
+
+print("[INFO] Loading Apriori data:", APR_PATH)
+
+with gzip.open(APR_PATH, "rt", encoding="utf-8") as f:
+    APRIORI_DATA = json.load(f)
+
+
+# --------------------------------------------------------
+# API ENDPOINT
+# --------------------------------------------------------
+
+@app.get("/apriori")
+def get_apriori_results():
+    return APRIORI_DATA
 
 # ---------------------------------------------------------
 # DEFAULT DATA PREVIEW

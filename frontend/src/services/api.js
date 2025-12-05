@@ -41,6 +41,9 @@ export const API = {
 
   // PCA duplicate route
   customerBehavior: () => get("/customer-behavior"),
+
+  // APRIORI ENDPOINT
+  apriori: () => get("/apriori"),
 };
 
 

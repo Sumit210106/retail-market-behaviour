@@ -1,110 +1,132 @@
+import os
+import json
+import gzip
 import pandas as pd
-# from mlxtend.frequent_patterns import apriori, association_rules
+from mlxtend.frequent_patterns import fpgrowth, association_rules
+
+# =============================================================================
+# CONFIG (for ~8k invoices, 2.7k items)
+# =============================================================================
+MIN_SUPPORT = 0.0005        # 0.05%
+MIN_CONFIDENCE = 0.05
+TOP_K_RULES = 300
+OUTPUT_FILENAME = "apriori_output.json.gz"
 
 
-def run_apriori(
-    df,
-    min_support=0.0005,      # Very low to find rare 4-item patterns
-    min_confidence=0.1,
-    top_n_products=120,      # Balanced for speed and pattern quality
-    max_len=4,               # Allow up to 4-item combinations
-    max_rules=50             # Increased to get more results
-):
+def get_root():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    """
-    Highly optimized Apriori for large datasets.
-    Supports:
-    - 2-itemsets
-    - 3-itemsets
-    - 4-itemsets (adjustable with max_len)
 
-    Returns strong association rules in JSON format.
-    """
+# =============================================================================
+# LOAD DATA
+# =============================================================================
+def load_uci_retail():
+    root = get_root()
+    path = os.path.join(root, "data", "uci_retail_1600_rows.xlsx")
 
-    # ---------------------------------------------------
-    # STEP 1: Clean dataset
-    # ---------------------------------------------------
-    df = df[['InvoiceNo', 'Description', 'Quantity']].dropna()
+    print("[INFO] Loading UCI Retail dataset:", path)
+    df = pd.read_excel(path)
 
-    # Remove cancelled invoices + negative quantity
-    df = df[df["Quantity"] > 0]
-    df = df[~df["InvoiceNo"].astype(str).str.startswith("C")]
+    df.columns = df.columns.str.strip().str.lower()
 
-    # Select top N most frequent products (boosts speed x10)
-    product_counts = df["Description"].value_counts()
-    top_products = product_counts.head(top_n_products).index
-    df = df[df["Description"].isin(top_products)]
+    df = df[df["description"].notna()]
+    df = df[df["quantity"] > 0]
 
-    print(
-        f"Apriori: {df['InvoiceNo'].nunique()} transactions, "
-        f"{len(top_products)} products, max_len={max_len}"
-    )
+    df = df[["invoiceno", "description"]]
+    df.columns = ["InvoiceNo", "Description"]
 
-    # ---------------------------------------------------
-    # STEP 2: Build basket matrix (Boolean One-Hot)
-    # ---------------------------------------------------
+    print("[INFO] Loaded shape:", df.shape)
+    return df
+
+
+# =============================================================================
+# BUILD BASKET
+# =============================================================================
+def preprocess(df):
+    print("[INFO] Building Invoice × Item matrix…")
+
     basket = (
-        df.groupby(["InvoiceNo", "Description"])["Quantity"]
-        .sum()
+        df.groupby(['InvoiceNo', 'Description'])['Description']
+        .count()
         .unstack()
         .fillna(0)
     )
 
-    basket = (basket > 0).astype(bool)
+    basket = basket.astype(bool)
 
-    # ---------------------------------------------------
-    # STEP 3: Frequent Itemsets
-    # ---------------------------------------------------
-    frequent_items = apriori(
-        basket,
-        min_support=min_support,
-        use_colnames=True,
-        max_len=max_len
-    )
+    print("[INFO] Basket shape:", basket.shape)
+    return basket
 
-    if frequent_items.empty:
-        return {"message": "No frequent itemsets found.", "rules": []}
 
-    print("Frequent itemsets found:", frequent_items.shape[0])
+# =============================================================================
+# RUN FP-GROWTH + RULES
+# =============================================================================
+def run_mba():
+    df = load_uci_retail()
+    basket = preprocess(df)
 
-    # ---------------------------------------------------
-    # STEP 4: Build strong rules
-    # ---------------------------------------------------
-    rules = association_rules(
-        frequent_items,
-        metric="confidence",
-        min_threshold=min_confidence
-    )
+    print(f"[INFO] Running FP-Growth (min_support={MIN_SUPPORT})…")
+    freq_items = fpgrowth(basket, min_support=MIN_SUPPORT, use_colnames=True)
+
+    print("[INFO] Frequent itemsets:", len(freq_items))
+
+    # Convert frozenset → list for JSON
+    freq_items["itemsets"] = freq_items["itemsets"].apply(list)
+
+    print(f"[INFO] Generating rules (min_conf={MIN_CONFIDENCE})…")
+    rules = association_rules(freq_items, metric="confidence", min_threshold=MIN_CONFIDENCE)
+
+    print("[INFO] Rules generated:", len(rules))
 
     if rules.empty:
-        return {"message": "No rules found.", "rules": []}
+        print("⚠️ No rules found — try lowering MIN_CONFIDENCE further")
 
-    # Keep useful columns
     rules = rules[["antecedents", "consequents", "support", "confidence", "lift"]]
 
-    # Convert frozensets → lists
+    # frozenset → list
     rules["antecedents"] = rules["antecedents"].apply(list)
     rules["consequents"] = rules["consequents"].apply(list)
 
-    # Sort by strength
-    rules = rules.sort_values(by="lift", ascending=False)
-
-    # ---------------------------------------------------
-    # STEP 5: Format JSON output
-    # ---------------------------------------------------
-    formatted = []
-    for _, row in rules.head(max_rules).iterrows():
-
-        formatted.append({
-            "buy_together": row["antecedents"],
-            "recommend": row["consequents"],
-            "support": round(float(row["support"]), 4),
-            "confidence": round(float(row["confidence"]), 4),
-            "lift": round(float(row["lift"]), 3),
-            "combination_size": len(row["antecedents"]) + len(row["consequents"])
-        })
+    rules = rules.sort_values(by="lift", ascending=False).head(TOP_K_RULES)
 
     return {
-        "message": f"{len(formatted)} rules found.",
-        "rules": formatted
+        "frequent_itemsets": freq_items.to_dict(orient="records"),
+        "rules": rules.to_dict(orient="records"),
+        "meta": {
+            "min_support": MIN_SUPPORT,
+            "min_confidence": MIN_CONFIDENCE,
+            "top_k_rules": TOP_K_RULES,
+            "dataset_rows": len(df)
+        }
     }
+
+
+# =============================================================================
+# SAVE .JSON.GZ
+# =============================================================================
+def save_output(data):
+    root = get_root()
+    cache_dir = os.path.join(root, "cached")
+    os.makedirs(cache_dir, exist_ok=True)
+
+    path = os.path.join(cache_dir, OUTPUT_FILENAME)
+    print("[INFO] Saving to:", path)
+
+    with gzip.open(path, "wt", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+    print("[INFO] Saved ✔")
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+if __name__ == "__main__":
+    print("==================================================")
+    print("      Market Basket Analysis (UCI Retail)         ")
+    print("==================================================")
+
+    results = run_mba()
+    save_output(results)
+
+    print("\nDONE ✔")
