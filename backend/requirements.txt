@@ -6,6 +6,3 @@ openpyxl
 scikit-learn
 numpy
 httpx
-json
-gzip
-os
