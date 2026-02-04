@@ -9,3 +9,5 @@
 | Time-based analysis              | **Peak Sales Insights**           | Best days/hours to run promotions     |
 | Upload Custom Data               | **Analyze My Store**              | Upload your own sales data            |
 
+
+render issue commited
