@@ -9,7 +9,8 @@ import {
   Map,
   BarChart2,
   UploadCloud,
-  X
+  X,
+  Bot
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -19,9 +20,9 @@ function cn(...inputs) {
 }
 
 const menuItems = [
-  { icon: Users, label: "Customer Segments", path: "/segments" },
   { icon: TrendingUp, label: "Spend Prediction", path: "/spend-prediction" },
-  // { icon: AlertTriangle, label: "Outlier Detection", path: "/outliers" },
+  { icon: Users, label: "Customer Segments", path: "/segments" },
+  { icon: Bot, label: "AI Assistant", path: "/ai-agent" },
   { icon: ThumbsUp, label: "Recommendations", path: "/recommendations" },
   { icon: Map, label: "Behavior Map", path: "/behavior-map" },
   { icon: BarChart2, label: "Peak Insights", path: "/peak-insights" },

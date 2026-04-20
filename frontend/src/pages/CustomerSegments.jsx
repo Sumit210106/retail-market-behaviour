@@ -13,13 +13,14 @@ import DashboardLayout from "../layouts/DashboardLayout.jsx";
 
 const COLORS = ["#6366f1", "#8b5cf6", "#a78bfa", "#c4b5fd", "#4f46e5", "#7c3aed"];
 
+import { API } from "../services/api";
+
 export default function CustomerSegments() {
   const [segments, setSegments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("https://retail-market-behaviour.onrender.com/customer-segmentation?k=3")
-      .then((res) => res.json())
+    API.customerSegmentation(3)
       .then((data) => {
         setSegments(data);
         setLoading(false);

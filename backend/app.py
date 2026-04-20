@@ -3,13 +3,16 @@ from utils.data_loader import load_default_data
 from utils.data_loader import load_5lakh_data
 from ml.timeseries import peak_sales_insights
 from ml.knn import build_knn, recommend
-# from ml.apriori import run_apriori
 from ml.kmeans import run_kmeans
 from ml.decision_tree import run_decision_tree
 from ml.pca import run_pca
 import json
 import gzip
 import os
+import time
+from ai.agent import run_agent
+from pydantic import BaseModel
+
 # cors
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -22,6 +25,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------
+# REQUEST MODEL (AI AGENT)
+# ---------------------------------------------------------
+class QueryRequest(BaseModel):
+    query: str
 
 
 # ---------------------------------------------------------
@@ -53,6 +62,7 @@ with gzip.open(APR_PATH, "rt", encoding="utf-8") as f:
 def get_apriori_results():
     return APRIORI_DATA
 
+
 # ---------------------------------------------------------
 # DEFAULT DATA PREVIEW
 # ---------------------------------------------------------
@@ -79,7 +89,6 @@ def get_peak_sales():
 # KNN SIMILAR PRODUCTS (Startup Cache)
 # ---------------------------------------------------------
 products = []
-products = []
 knn_model = None
 sparse_matrix = None
 
@@ -99,11 +108,11 @@ def prepare_knn():
 def similar(product: str):
     return recommend(product, products, knn_model, sparse_matrix)
 
-# Here limit to first 50 .
+
 @app.get("/similar-products/all")
 def all_similar():
     result = {}
-    limit = 50  # avoid API timeout
+    limit = 50  
 
     for product in products[:limit]:
         result[product] = recommend(product, products, knn_model, sparse_matrix, top_k=5)
@@ -112,80 +121,62 @@ def all_similar():
 
 
 # ---------------------------------------------------------
-# APRIORI – Frequently Bought Together
-# ---------------------------------------------------------
-# @app.get("/frequently-bought-together")
-# def get_fbt(
-#     min_support: float = 0.001,
-#     min_confidence: float = 0.01,
-#     top_k: int = 20
-# ):
-#     df =load_5lakh_data()
-
-#     result = run_apriori(df, min_support, min_confidence)
-    
-#     # run_apriori returns {"message": "...", "rules": [...]}
-#     rules = result.get("rules", [])
-    
-#     # Sort by combination_size (descending) first, then by lift (descending)
-#     # This prioritizes showing 3-4 item combinations before 2-item ones
-#     sorted_rules = sorted(
-#         rules, 
-#         key=lambda x: (x.get("combination_size", 0), x["lift"]), 
-#         reverse=True
-#     )
-    
-#     return {
-#         "message": result.get("message", "Success"),
-#         "rules": sorted_rules[:top_k]
-#     }
-
-
-
-# ---------------------------
 # KMEANS ENDPOINT
-# ---------------------------
+# ---------------------------------------------------------
 @app.get("/customer-segmentation")
 def customer_segmentation(k: int = 3):
-    """
-    Run K-Means clustering for customer segmentation.
-    Returns cluster summaries.
-    """
     df = load_default_data()
-    result = run_kmeans(df, k)
-    return result
+    return run_kmeans(df, k)
 
-# ---------------------------
+
+# ---------------------------------------------------------
 # DECISION TREE ENDPOINT
-# ---------------------------
-
+# ---------------------------------------------------------
 @app.get("/customer-spend-prediction")
 def spend_prediction():
     df = load_default_data()
-    result = run_decision_tree(df)
-    return result
+    return run_decision_tree(df)
 
 
-# ---------------------------
+# ---------------------------------------------------------
 # PCA ENDPOINT
-# ---------------------------
+# ---------------------------------------------------------
 @app.get("/pca-visualization")
 def pca_visualization():
-    """
-    Run PCA for customer visualization.
-    Returns 2D coordinates for each customer.
-    """
     df = load_default_data()
-    result = run_pca(df)
-    return result
+    return run_pca(df)
 
 
-# ---------------------------
-# PCA
-# ---------------------------
-
+# ---------------------------------------------------------
+# CUSTOMER BEHAVIOR 
+# ---------------------------------------------------------
 @app.get("/customer-behavior")
 def customer_behavior():
     df = load_default_data()
-    result = run_pca(df)
-    return result
+    return run_pca(df)
+
+
+# ---------------------------------------------------------
+# 🤖 AI AGENT ENDPOINT 
+# ---------------------------------------------------------
+@app.post("/ai-agent")
+def ai_agent(request: QueryRequest):
+    try:
+        start_time = time.time()
+
+        response = run_agent(request.query)
+
+        end_time = time.time()
+
+        return {
+            "status": "success",
+            "query": request.query,
+            "response": response,
+            "time_taken": round(end_time - start_time, 2)
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }

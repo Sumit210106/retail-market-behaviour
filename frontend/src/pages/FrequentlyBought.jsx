@@ -57,9 +57,11 @@ export default function AprioriDashboard() {
   // Rules where the selected itemset is the antecedent
   const selectedRules = selectedItemset
     ? sortedRules.filter(
-        (r) =>
-          JSON.stringify(r.antecedents) ===
-          JSON.stringify(selectedItemset.itemsets)
+        (r) => {
+          const a = [...r.antecedents].sort().join("|");
+          const b = [...selectedItemset.itemsets].sort().join("|");
+          return a === b;
+        }
       )
     : [];
 
@@ -99,7 +101,7 @@ export default function AprioriDashboard() {
 
             <div className="bg-white rounded-lg p-4 border border-gray-200">
               <div className="text-2xl font-bold text-indigo-600">
-                {data.meta.max_itemset_len}
+                {data.meta?.max_itemset_len || "N/A"}
               </div>
               <div className="text-sm text-gray-600 mt-1">
                 Max Itemset Length
@@ -108,7 +110,7 @@ export default function AprioriDashboard() {
 
             <div className="bg-white rounded-lg p-4 border border-gray-200">
               <div className="text-2xl font-bold text-indigo-600">
-                {data.meta.min_support}
+                {data.meta?.min_support || "N/A"}
               </div>
               <div className="text-sm text-gray-600 mt-1">Min Support</div>
             </div>

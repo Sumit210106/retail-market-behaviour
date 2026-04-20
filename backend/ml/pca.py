@@ -41,8 +41,6 @@ def run_pca(df, n_components=2):
     customer_df['x'] = pca_result[:, 0]
     customer_df['y'] = pca_result[:, 1]
     
-    # Convert to list of dictionaries for JSON response
-    # Rounding float values for cleaner output
     results = []
     for _, row in customer_df.iterrows():
         results.append({

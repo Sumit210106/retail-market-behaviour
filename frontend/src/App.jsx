@@ -9,6 +9,7 @@ import Recommendations from "./pages/Recommendations.jsx";
 import BehaviorMap from "./pages/BehaviorMap.jsx";
 import PeakInsights from "./pages/PeakInsights.jsx";
 import UploadStoreData from "./pages/UploadStoreData.jsx";
+import AIAgent from "./pages/AIAgent.jsx";
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/behavior-map" element={<BehaviorMap />} />
         <Route path="/peak-insights" element={<PeakInsights />} />
         <Route path="/upload" element={<UploadStoreData />} />
+        <Route path="/ai-agent" element={<AIAgent />} />
       </Routes>
     </Router>
   );

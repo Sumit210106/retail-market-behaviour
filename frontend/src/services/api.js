@@ -1,12 +1,27 @@
-// src/services/api.js
-
 const BASE_URL = "https://retail-market-behaviour.onrender.com"; 
-// ↑ Replace with your actual backend URL
 
 // Generic GET helper
 async function get(endpoint) {
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`);
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error("Fetch Error:", err);
+    throw err;
+  }
+}
+
+// Generic POST helper
+async function post(endpoint, data) {
+  try {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
     if (!res.ok) throw new Error(`API Error: ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -44,6 +59,9 @@ export const API = {
 
   // APRIORI ENDPOINT
   apriori: () => get("/apriori"),
+
+  // AI AGENT ENDPOINT
+  aiAgent: (query) => post("/ai-agent", { query }),
 };
 
 
