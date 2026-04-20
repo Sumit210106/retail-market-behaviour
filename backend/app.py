@@ -11,9 +11,7 @@ import gzip
 import os
 import time
 
-from ai.agent import run_agent
 from pydantic import BaseModel
-
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -112,10 +110,8 @@ def similar(product: str):
 def all_similar():
     result = {}
     limit = 50
-
     for product in products[:limit]:
         result[product] = recommend(product, products, knn_model, sparse_matrix, top_k=5)
-
     return result
 
 
@@ -146,23 +142,22 @@ def customer_behavior():
     return run_pca(df)
 
 
-
+# -------------------------
+# AI AGENT ENDPOINT
+# -------------------------
 @app.post("/ai-agent")
 def ai_agent(request: QueryRequest):
     try:
+        from ai.agent import run_agent
         start_time = time.time()
-
         response = run_agent(request.query)
-
         end_time = time.time()
-
         return {
             "status": "success",
             "query": request.query,
             "response": response,
             "time_taken": round(end_time - start_time, 2)
         }
-
     except Exception as e:
         return {
             "status": "error",

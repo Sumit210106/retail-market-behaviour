@@ -1,10 +1,10 @@
 from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import SystemMessage
 from ai.tools import get_tools
 from ai.config import get_llm
 
 llm = get_llm()
 tools = get_tools()
-
 
 SYSTEM_PROMPT = """
 You are a retail intelligence assistant.
@@ -29,11 +29,10 @@ Recommendations:
 - ...
 """
 
-
 agent_executor = create_react_agent(
     model=llm,
     tools=tools,
-    prompt=SYSTEM_PROMPT
+    state_modifier=SystemMessage(content=SYSTEM_PROMPT)  # ← fixed
 )
 
 
