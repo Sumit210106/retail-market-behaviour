@@ -2,14 +2,12 @@ import json
 import gzip
 import os
 
-from langchain.tools import Tool
-
 from utils.data_loader import load_default_data
 from ml.kmeans import run_kmeans
 from ml.timeseries import peak_sales_insights
 
-df = load_default_data()
 
+df = load_default_data()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APR_PATH = os.path.join(BASE_DIR, "cached", "apriori_output.json.gz")
@@ -42,21 +40,10 @@ def basket_tool(input_str: str = ""):
         return f"Error in basket tool: {str(e)}"
 
 
+
 def get_tools():
     return [
-        Tool(
-            name="Customer Segmentation",
-            func=segmentation_tool,
-            description="Analyze customer groups based on spending, frequency, and orders. Use this to identify high-value customers."
-        ),
-        Tool(
-            name="Peak Sales Analysis",
-            func=peak_sales_tool,
-            description="Analyze sales trends to find best hours and days for maximum revenue."
-        ),
-        Tool(
-            name="Market Basket Analysis",
-            func=basket_tool,
-            description="Find frequently bought together products using association rules (Apriori). Useful for bundling and cross-selling."
-        )
+        segmentation_tool,
+        peak_sales_tool,
+        basket_tool
     ]

@@ -5,25 +5,30 @@ from ai.config import get_llm
 llm = get_llm()
 tools = get_tools()
 
+
 SYSTEM_PROMPT = """
 You are a retail intelligence assistant.
 
-You have access to tools for:
-- customer segmentation
-- sales trend analysis
-- product association analysis
+You help analyze retail data using available tools.
 
-Answer the user's question by:
-1. Using tools when needed
-2. Giving clear insights
-3. Explaining reasons
-4. Suggesting actions
+You MUST:
+- Use tools when needed
+- Give clear business insights
+- Explain reasons
+- Suggest actionable recommendations
 
-Respond in structured format:
-- Insights
-- Reasons
-- Recommendations
+Always respond in this format:
+
+Insights:
+- ...
+
+Reasons:
+- ...
+
+Recommendations:
+- ...
 """
+
 
 agent_executor = create_react_agent(
     model=llm,
@@ -31,8 +36,24 @@ agent_executor = create_react_agent(
     prompt=SYSTEM_PROMPT
 )
 
+
 def run_agent(query: str):
-    response = agent_executor.invoke({
-        "messages": [("user", query)]
-    })
-    return response["messages"][-1].content
+    try:
+        response = agent_executor.invoke({
+            "messages": [("user", query)]
+        })
+
+        messages = response.get("messages", [])
+
+        if not messages:
+            return "No response generated."
+
+        last_message = messages[-1]
+
+        if hasattr(last_message, "content"):
+            return last_message.content
+
+        return str(last_message)
+
+    except Exception as e:
+        return f"Agent error: {str(e)}"

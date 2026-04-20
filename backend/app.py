@@ -10,62 +10,61 @@ import json
 import gzip
 import os
 import time
+
 from ai.agent import run_agent
 from pydantic import BaseModel
 
-# cors
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],        
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------
-# REQUEST MODEL (AI AGENT)
-# ---------------------------------------------------------
+# -------------------------
+# REQUEST MODEL
+# -------------------------
 class QueryRequest(BaseModel):
     query: str
 
 
-# ---------------------------------------------------------
+# -------------------------
 # HOME
-# ---------------------------------------------------------
+# -------------------------
 @app.get("/")
 def home():
     return {"status": "API is running!"}
 
 
-# --------------------------------------------------------
-# Load Apriori output once when the server starts
-# --------------------------------------------------------
-
+# -------------------------
+# LOAD APRIORI 
+# -------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 APR_PATH = os.path.join(BASE_DIR, "cached", "apriori_output.json.gz")
 
-print("[INFO] Loading Apriori data:", APR_PATH)
+APRIORI_DATA = {}
 
-with gzip.open(APR_PATH, "rt", encoding="utf-8") as f:
-    APRIORI_DATA = json.load(f)
+try:
+    print("[INFO] Loading Apriori data:", APR_PATH)
+    with gzip.open(APR_PATH, "rt", encoding="utf-8") as f:
+        APRIORI_DATA = json.load(f)
+except Exception as e:
+    print("[WARNING] Failed to load Apriori data:", str(e))
 
 
-# --------------------------------------------------------
-# API ENDPOINT
-# --------------------------------------------------------
-
+# -------------------------
+# API ENDPOINTS
+# -------------------------
 @app.get("/apriori")
 def get_apriori_results():
     return APRIORI_DATA
 
 
-# ---------------------------------------------------------
-# DEFAULT DATA PREVIEW
-# ---------------------------------------------------------
 @app.get("/default-data")
 def get_default_data():
     df = load_default_data()
@@ -76,18 +75,15 @@ def get_default_data():
     }
 
 
-# ---------------------------------------------------------
-# PEAK SALES INSIGHTS
-# ---------------------------------------------------------
 @app.get("/peak-sales")
 def get_peak_sales():
     df = load_default_data()
     return peak_sales_insights(df)
 
 
-# ---------------------------------------------------------
-# KNN SIMILAR PRODUCTS (Startup Cache)
-# ---------------------------------------------------------
+# -------------------------
+# KNN SETUP
+# -------------------------
 products = []
 knn_model = None
 sparse_matrix = None
@@ -96,14 +92,17 @@ sparse_matrix = None
 @app.on_event("startup")
 def prepare_knn():
     global products, knn_model, sparse_matrix
-    df = load_default_data()
-    products, knn_model, sparse_matrix = build_knn(df)
-    print("KNN model loaded with", len(products), "products")
+    try:
+        df = load_default_data()
+        products, knn_model, sparse_matrix = build_knn(df)
+        print("KNN model loaded with", len(products), "products")
+    except Exception as e:
+        print("[ERROR] KNN loading failed:", str(e))
 
 
-# ---------------------------------------------------------
+# -------------------------
 # KNN ENDPOINTS
-# ---------------------------------------------------------
+# -------------------------
 @app.get("/similar-products")
 def similar(product: str):
     return recommend(product, products, knn_model, sparse_matrix)
@@ -112,7 +111,7 @@ def similar(product: str):
 @app.get("/similar-products/all")
 def all_similar():
     result = {}
-    limit = 50  
+    limit = 50
 
     for product in products[:limit]:
         result[product] = recommend(product, products, knn_model, sparse_matrix, top_k=5)
@@ -120,45 +119,34 @@ def all_similar():
     return result
 
 
-# ---------------------------------------------------------
-# KMEANS ENDPOINT
-# ---------------------------------------------------------
+# -------------------------
+# ML ENDPOINTS
+# -------------------------
 @app.get("/customer-segmentation")
 def customer_segmentation(k: int = 3):
     df = load_default_data()
     return run_kmeans(df, k)
 
 
-# ---------------------------------------------------------
-# DECISION TREE ENDPOINT
-# ---------------------------------------------------------
 @app.get("/customer-spend-prediction")
 def spend_prediction():
     df = load_default_data()
     return run_decision_tree(df)
 
 
-# ---------------------------------------------------------
-# PCA ENDPOINT
-# ---------------------------------------------------------
 @app.get("/pca-visualization")
 def pca_visualization():
     df = load_default_data()
     return run_pca(df)
 
 
-# ---------------------------------------------------------
-# CUSTOMER BEHAVIOR 
-# ---------------------------------------------------------
 @app.get("/customer-behavior")
 def customer_behavior():
     df = load_default_data()
     return run_pca(df)
 
 
-# ---------------------------------------------------------
-# 🤖 AI AGENT ENDPOINT 
-# ---------------------------------------------------------
+
 @app.post("/ai-agent")
 def ai_agent(request: QueryRequest):
     try:

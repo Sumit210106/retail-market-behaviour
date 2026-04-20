@@ -6,7 +6,7 @@ openpyxl
 scikit-learn
 numpy
 httpx
-langchain
-langchain-community
+langchain-core
 langchain-groq
+langgraph
 python-dotenv
