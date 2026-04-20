@@ -1,5 +1,5 @@
 from langgraph.prebuilt import create_react_agent
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from ai.tools import get_tools
 from ai.config import get_llm
 
@@ -29,17 +29,22 @@ Recommendations:
 - ...
 """
 
+
+def add_system_prompt(messages):
+    return [SystemMessage(content=SYSTEM_PROMPT)] + list(messages)
+
 agent_executor = create_react_agent(
     model=llm,
     tools=tools,
-    messages_modifier=SystemMessage(content=SYSTEM_PROMPT)  # ← try this
 )
 
 
 def run_agent(query: str):
     try:
+        messages_with_system = add_system_prompt([HumanMessage(content=query)])
+
         response = agent_executor.invoke({
-            "messages": [("user", query)]
+            "messages": messages_with_system
         })
 
         messages = response.get("messages", [])
