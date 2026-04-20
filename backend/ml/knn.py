@@ -2,8 +2,18 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neighbors import NearestNeighbors
 
+
 def build_knn(df):
-    products = df["Description"].astype(str).tolist()
+    products = (
+        df["Description"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .replace("", pd.NA)
+        .dropna()
+        .unique()
+        .tolist()
+    )
 
     vec = CountVectorizer()
     sparse_matrix = vec.fit_transform(products)
@@ -15,14 +25,15 @@ def build_knn(df):
 
 
 def recommend(product_name, products, model, sparse_matrix, top_k=5):
+    if not products or model is None or sparse_matrix is None:
+        return []
+
     if product_name not in products:
         return []
 
     idx = products.index(product_name)
-    
     query_vec = sparse_matrix[idx]
     distances, indices = model.kneighbors(query_vec, n_neighbors=min(top_k * 5, len(products)))
-    
 
     distances = distances.flatten()
     indices = indices.flatten()
@@ -34,19 +45,17 @@ def recommend(product_name, products, model, sparse_matrix, top_k=5):
     for i in range(1, len(indices)):
         neighbor_idx = indices[i]
         name = products[neighbor_idx]
-        
+
         if name in seen:
             continue
         seen.add(name)
 
-        distance = distances[i]
-        similarity = 1 - distance  
+        similarity = round(float(1 - distances[i]), 3)
 
         recommendations.append({
             "product": name,
-            "similarity": round(float(similarity), 3)
+            "similarity": similarity
         })
-        
         if len(recommendations) >= top_k:
             break
 
