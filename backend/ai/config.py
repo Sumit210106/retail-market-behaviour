@@ -7,6 +7,6 @@ load_dotenv()
 def get_llm():
     return ChatGroq(
         groq_api_key=os.getenv("GROQ_API_KEY"),
-        model_name="mixtral-8x7b-32768",
+        model_name="llama3-70b-8192",
         temperature=0
     )

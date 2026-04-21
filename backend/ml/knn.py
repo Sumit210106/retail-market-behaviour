@@ -28,10 +28,19 @@ def recommend(product_name, products, model, sparse_matrix, top_k=5):
     if not products or model is None or sparse_matrix is None:
         return []
 
-    if product_name not in products:
-        return []
+    product_query = str(product_name).strip().upper()
 
-    idx = products.index(product_name)
+    if product_query not in products:
+        found = False
+        for p in products:
+            if product_query in p:
+                product_query = p
+                found = True
+                break
+        if not found:
+            return []
+
+    idx = products.index(product_query)
     query_vec = sparse_matrix[idx]
     distances, indices = model.kneighbors(query_vec, n_neighbors=min(top_k * 5, len(products)))
 
